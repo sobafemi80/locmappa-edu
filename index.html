@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>LocMappa Edu — Global PhD & Masters Opportunity Map</title>
+<title>LocMappa — Global PhD & Masters Opportunity Map</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -107,6 +107,7 @@ a{color:inherit;}
 .sico{font-size:2.2rem;margin-bottom:14px;}
 .stitle{font-family:"Syne",sans-serif;font-weight:800;font-size:1.35rem;margin-bottom:7px;color:var(--accent);}
 .ssub{font-size:0.78rem;color:var(--muted);line-height:1.6;}
+@keyframes lm-blink{0%,100%{opacity:1;}50%{opacity:0.15;}}
 @media(max-width:900px){
   #panel{width:calc(100vw - 24px);left:12px;top:68px;}
   #bottom-bar{gap:14px;padding:0 12px;overflow-x:auto;}
@@ -121,7 +122,7 @@ a{color:inherit;}
   <div class="logo">
     <div class="logo-dot"></div>
     <span style="color:#fff">Loc</span><span style="color:var(--accent)">Mappa</span>
-    <span style="font-weight:400;color:var(--muted);font-size:0.85rem;font-family:'DM Mono',monospace;margin-left:4px">/ edu</span>
+    <span style="font-weight:400;color:var(--muted);font-size:0.85rem;font-family:'DM Mono',monospace;margin-left:4px">/ opportunities</span>
   </div>
   <div class="header-right">
     <div class="badge">&#9679; updated weekly</div>
@@ -152,7 +153,7 @@ a{color:inherit;}
     <div class="sec"><div class="sec-title">Visa</div><div class="pills" id="visa-pills"></div></div>
     <div class="sec"><div class="sec-title">Category</div><div class="pills" id="cat-pills"></div></div>
     <div class="note-box">
-      <div class="note"><strong>LocMappa Edu</strong> turns scattered PhD and Masters opportunities into a visual map. Spot funding clusters, filter by field or category, and apply faster.</div>
+      <div class="note"><strong>LocMappa</strong> turns scattered PhD and Masters opportunities into a visual map. Spot funding clusters, filter by field or category, and apply faster.</div>
     </div>
     <div id="opp-list"></div>
   </div>
@@ -238,6 +239,66 @@ const OPP_DATA = [
   {title:'PhD — Value Delivery Analysis in Megaprojects',school:'NTNU Norwegian University of Science and Technology',country:'Norway',city:'Trondheim',lat:63.4305,lng:10.3951,field:'civil engineering',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.ntnu.edu/',source:'EURAXESS'},
   {title:'PhD — Computational Dosimetry for Interventional Radiology',school:'Belgian Nuclear Research Centre SCK CEN',country:'Belgium',city:'Mol',lat:51.191,lng:5.0957,field:'physics',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.sckcen.be/',source:'EURAXESS'},
   {title:'Choose Europe for Science — Extended Postdoctoral Fellowships 2025-2026',school:'Various European Institutions MSCA',country:'Germany',city:'Munich',lat:48.1351,lng:11.582,field:'software',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://euraxess.ec.europa.eu/jobs',source:'EURAXESS'},
+  {title:'PhD — Sedimentology and Petrography, Alluvial Fan Systems',school:'University of Oslo',country:'Norway',city:'Oslo',lat:59.9139,lng:10.7522,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.sepm.org/jobs',source:'SEPM'},
+  {title:'PhD — Sedimentology, University of Bern and Imperial College London (Jan 2026)',school:'University of Bern / Imperial College London',country:'Switzerland',city:'Bern',lat:46.948,lng:7.4474,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.sepm.org/jobs',source:'SEPM'},
+  {title:'PhD — Subsurface Reservoir Characterisation, CrossScale Project',school:'Delft University of Technology',country:'Netherlands',city:'Delft',lat:52.0116,lng:4.3571,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.tudelft.nl',source:'ApplyKite'},
+  {title:'PhD — Geoscience and Engineering, Khalifa University Scholarship 2026',school:'Khalifa University',country:'UAE',city:'Abu Dhabi',lat:24.4539,lng:54.3773,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.ku.ac.ae',source:'ApplyKite'},
+  {title:'PhD — Geology and Sustainable Mining (TEXMiN Fellowship 2026)',school:'IIT Indian School of Mines Dhanbad',country:'India',city:'Dhanbad',lat:23.7957,lng:86.4304,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.iitism.ac.in',source:'ApplyKite'},
+  {title:'Postdoc — Subsurface Geological Modelling for CO2 Storage, Permian Basin',school:'University of Texas Permian Basin',country:'USA',city:'Odessa',lat:31.8457,lng:-102.3676,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.higheredjobs.com/faculty/details.cfm?JobCode=179156477',source:'HigherEdJobs'},
+  {title:'Postdoc — Geophysical Fluid Dynamics / Atmospheric and Oceanic Sciences',school:'Princeton University / NOAA GFDL',country:'USA',city:'Princeton',lat:40.3573,lng:-74.6672,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://geosciences.princeton.edu/jobs',source:'Princeton Geosciences'},
+  {title:'Postdoc — Lori Summa and Awwiller Fellowship in Geosciences',school:'UC Davis Department of Earth and Planetary Sciences',country:'USA',city:'Davis',lat:38.5382,lng:-121.7617,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://findajob.agu.org/jobs/postdoctoral-/',source:'AGU'},
+  {title:'Postdoc — Kunqiong Fellowship in Geophysics',school:'University of Science and Technology of China',country:'China',city:'Hefei',lat:31.8206,lng:117.2272,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://findajob.agu.org/jobs/postdoctoral-/',source:'AGU'},
+  {title:'Postdoc — Ultrahigh-Pressure Mineral Physics and Geophysics (3 years)',school:'ETH Zurich Institute of Geochemistry and Petrology',country:'Switzerland',city:'Zurich',lat:47.3769,lng:8.5417,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.applykite.com/search/positions/postdoc/all/geology',source:'ApplyKite'},
+  {title:'Postdoc — Economic Geology and Mineral Systems Exploration (Zambia), Industry-funded',school:'University of Leicester / Ivanhoe Mines',country:'UK',city:'Leicester',lat:52.6369,lng:-1.1398,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.applykite.com/search/positions/postdoc/all/geology',source:'ApplyKite'},
+  {title:'Postdoc — Next-Generation Reservoir Modelling, DeepNL NWO Programme',school:'Delft University of Technology',country:'Netherlands',city:'Delft',lat:52.0116,lng:4.3571,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.tudelft.nl',source:'ApplyKite'},
+  {title:'Postdoc — CO2 Storage Reservoir Characterisation, CCUS Geosciences',school:'University of Texas Permian Basin',country:'USA',city:'Odessa',lat:31.8457,lng:-102.3676,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.higheredjobs.com',source:'HigherEdJobs'},
+  {title:'Postdoc — Structural Geology and Salt Tectonics, Hydrogen Storage Project',school:'University of Barcelona',country:'Spain',city:'Barcelona',lat:41.3851,lng:2.1734,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://euraxess.ec.europa.eu/jobs/90967',source:'EURAXESS'},
+  {title:'Postdoc — Seismology and Geophysics (Engineering Seismology)',school:'University of Memphis',country:'USA',city:'Memphis',lat:35.1495,lng:-90.049,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Distributed Acoustic Sensing (DAS) Geophysics',school:'University of Washington',country:'USA',city:'Seattle',lat:47.6062,lng:-122.3321,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Icy Ocean World Interiors, Institute for Geophysics',school:'University of Texas at Austin',country:'USA',city:'Austin',lat:30.2849,lng:-97.7341,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Applied Geophysics, Geoscience and Environmental Technology',school:'Lulea University of Technology',country:'Sweden',city:'Lulea',lat:65.6169,lng:22.1368,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/applied-geophysics-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Structural Geology, Department of Earth Science',school:'University of Bergen',country:'Norway',city:'Bergen',lat:60.3913,lng:5.3221,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/geology-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Geology and Sustainable Mining Institute (18 months)',school:'Mohammed VI Polytechnic University UM6P',country:'Morocco',city:'Benguerir',lat:32.233,lng:-7.9568,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/geology-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Earth Sciences and Geology',school:'SUNY University at Buffalo',country:'USA',city:'Buffalo',lat:42.8864,lng:-78.8784,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/geology-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Marine Geology, Physical Oceanography and Coastal Dynamics',school:'Second Institute of Oceanography MNR China',country:'China',city:'Hangzhou',lat:30.2741,lng:120.1551,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.nature.com/naturecareers/jobs/earth-science/postdoctoral/',source:'Nature Careers'},
+  {title:'Postdoc — Isotope Geochemistry, High-Precision Analyses',school:'Academic Positions — European Institutions',country:'Germany',city:'Berlin',lat:52.52,lng:13.405,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://academicpositions.com/jobs/position/post-doc/field/geosciences',source:'Academic Positions'},
+  {title:'Postdoc — Arctic Coastal Biogeochemical Cycling and Glacier Dynamics (3 positions)',school:'Norwegian Research Institutions',country:'Norway',city:'Oslo',lat:59.9139,lng:10.7522,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.nature.com/naturecareers/jobs/earth-science/postdoctoral/',source:'Nature Careers'},
+  {title:'Postdoc — Future Faculty in Physical Sciences Fellowship (Geophysics)',school:'Princeton University',country:'USA',city:'Princeton',lat:40.3573,lng:-74.6672,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://geosciences.princeton.edu/jobs',source:'Princeton Geosciences'},
+  {title:'Postdoc — NYU Abu Dhabi, Applied Geophysics and Engineering',school:'New York University Abu Dhabi',country:'UAE',city:'Abu Dhabi',lat:24.5247,lng:54.4337,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/applied-geophysics-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Carbon Geo-Sequestration and Reservoir Characterisation',school:'Colorado School of Mines',country:'USA',city:'Golden',lat:39.7555,lng:-105.2211,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Earth and Atmospheric Sciences, School of EAS',school:'Georgia Tech',country:'USA',city:'Atlanta',lat:33.749,lng:-84.388,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Geological Oceanography / Marine Geophysics (Tenure-track)',school:'University of South Florida St. Petersburg',country:'USA',city:'St. Petersburg',lat:27.7676,lng:-82.6403,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.us-ocb.org/science-support/jobs-and-postdocs/',source:'OCB'},
+  {title:'Postdoc — Seismic Inversion and Geophysical Modelling',school:'University of Texas at Austin — Prof. Mrinal Sen',country:'USA',city:'Austin',lat:30.2849,lng:-97.7341,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'NVIDIA — Software Dev Engineer in Test, New Grad 2026 ($100k-$190k, H1B)',school:'NVIDIA',country:'USA',city:'Austin',lat:30.2672,lng:-97.7431,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Developer Technology Engineer, New Grad 2026 ($124k-$242k, H1B)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.3541,lng:-121.9552,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Research Scientist PhD New Grad 2026 ($168k-$265k, H1B)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.3541,lng:-121.9552,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://research.nvidia.com/labs/amri/post/fulltime_for_2026/',source:'NVIDIA Research'},
+  {title:'NVIDIA — Firmware Engineer New Grad 2026 - Memory Subsystem ($124k-$242k)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.355,lng:-121.96,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Silicon Co-Design Engineer New Grad 2026 ($100k-$167k, H1B)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.3542,lng:-121.9545,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Research Scientist, AI-Mediated Reality New Grad 2026 (H1B)',school:'NVIDIA Research',country:'USA',city:'Santa Clara',lat:37.3538,lng:-121.9558,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://research.nvidia.com/labs/amri/post/fulltime_for_2026/',source:'NVIDIA Research'},
+  {title:'NVIDIA Graduate Fellowship 2026-2027 — PhD Fellowship (CS/EE/Physics)',school:'NVIDIA Research',country:'USA',city:'Santa Clara',lat:37.353,lng:-121.9565,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://research.nvidia.com/graduate-fellowships',source:'NVIDIA Research'},
+  {title:'Meta — EMC Design Engineer, University Grad (H1B)',school:'Meta Platforms',country:'USA',city:'Redmond',lat:47.674,lng:-122.1215,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.metacareers.com/careerprograms/students',source:'Meta Careers'},
+  {title:'Meta — Research Scientist Postdoc, Generative AI and ML (H1B)',school:'Meta AI Research',country:'USA',city:'New York',lat:40.7128,lng:-74.006,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.metacareers.com/careerprograms/students',source:'Meta Careers'},
+  {title:'Salesforce — Sales Development Representative New Grad ($52k-$69k, H1B)',school:'Salesforce',country:'USA',city:'San Francisco',lat:37.7749,lng:-122.4194,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.salesforce.com',source:'Simplify Jobs'},
+  {title:'Salesforce — Commercial Graduate Sales, Dublin (H1B/Work Visa)',school:'Salesforce',country:'Ireland',city:'Dublin',lat:53.3498,lng:-6.2603,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.salesforce.com',source:'Simplify Jobs'},
+  {title:'Google — Software Engineer New Grad 2026 (H1B, Multiple Locations)',school:'Google',country:'USA',city:'Mountain View',lat:37.3861,lng:-122.0839,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.google.com/jobs/results/?degree=BACHELORS&employment_type=FULL_TIME&jlo=en_US&q=new+grad',source:'Google Careers'},
+  {title:'Google — Research Scientist New Grad 2026 (H1B)',school:'Google DeepMind',country:'USA',city:'San Francisco',lat:37.7749,lng:-122.4194,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.google.com',source:'Google Careers'},
+  {title:'Google — Data Scientist New Grad 2026 (H1B, NYC/SF/Seattle)',school:'Google',country:'USA',city:'New York',lat:40.7128,lng:-74.006,field:'data',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.google.com',source:'Google Careers'},
+  {title:'Amazon — Software Development Engineer New Grad 2026 (H1B)',school:'Amazon',country:'USA',city:'Seattle',lat:47.6062,lng:-122.3321,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.amazon.jobs/en/teams/university-tech',source:'Amazon Jobs'},
+  {title:'Amazon — Data Engineer New Grad 2026 (H1B, AWS)',school:'Amazon Web Services',country:'USA',city:'Seattle',lat:47.608,lng:-122.335,field:'data',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.amazon.jobs/en/teams/university-tech',source:'Amazon Jobs'},
+  {title:'Microsoft — Software Engineer New Grad 2026 (H1B, Redmond/NYC)',school:'Microsoft',country:'USA',city:'Redmond',lat:47.674,lng:-122.1215,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.microsoft.com/students/us/en/universitygrad',source:'Microsoft Careers'},
+  {title:'Microsoft — AI/ML Engineer New Grad 2026 (H1B)',school:'Microsoft',country:'USA',city:'Redmond',lat:47.6745,lng:-122.122,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.microsoft.com/students/us/en/universitygrad',source:'Microsoft Careers'},
+  {title:'Apple — Software Engineer New Grad 2026 (H1B, Cupertino)',school:'Apple',country:'USA',city:'Cupertino',lat:37.3318,lng:-122.0312,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.apple.com/en-us/search?team=internships-and-graduate-programs-STDNT-PGRM',source:'Apple Jobs'},
+  {title:'Stripe — Software Engineer New Grad 2026 (Visa Sponsorship + Relocation)',school:'Stripe',country:'USA',city:'San Francisco',lat:37.773,lng:-122.416,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://stripe.com/jobs/search?q=new+grad',source:'Stripe Jobs'},
+  {title:'Atlassian — Software Engineer Graduate (Australia / US, Visa Sponsorship)',school:'Atlassian',country:'Australia',city:'Sydney',lat:-33.8688,lng:151.2093,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.atlassian.com/company/careers',source:'Atlassian Careers'},
+  {title:'Shopify — Software Engineer New Grad (Remote-First, Canada, Visa Support)',school:'Shopify',country:'Canada',city:'Ottawa',lat:45.4215,lng:-75.6972,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.shopify.com/careers',source:'Shopify Careers'},
+  {title:'SAP — Software Developer New Grad (EU Blue Card, Germany)',school:'SAP',country:'Germany',city:'Walldorf',lat:49.2936,lng:8.6442,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.sap.com',source:'SAP Careers'},
+  {title:'Siemens — Mechanical / Electrical Engineer New Grad (EU Blue Card, Germany)',school:'Siemens',country:'Germany',city:'Munich',lat:48.1351,lng:11.582,field:'mechanical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.siemens.com',source:'Siemens Careers'},
+  {title:'ASML — Optical / Mechatronics Engineer New Grad (Highly Skilled Migrant Visa)',school:'ASML',country:'Netherlands',city:'Eindhoven',lat:51.4416,lng:5.4697,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.asml.com/en/careers',source:'ASML Careers'},
+  {title:'Equinor — Petroleum / Reservoir Engineer New Grad (Norway Work Permit)',school:'Equinor',country:'Norway',city:'Stavanger',lat:58.97,lng:5.7331,field:'energy',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.equinor.com/careers/university-students',source:'Equinor Careers'},
+  {title:'ADNOC — Petroleum Engineer New Grad (Tax-Free, UAE Residence Visa)',school:'ADNOC',country:'UAE',city:'Abu Dhabi',lat:24.4539,lng:54.3773,field:'energy',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.adnoc.ae',source:'ADNOC Careers'},
+  {title:'Revolut — Software Engineer New Grad (Europe, Visa Support, Digital Process)',school:'Revolut',country:'UK',city:'London',lat:51.5072,lng:-0.1276,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.revolut.com/careers',source:'Revolut Careers'},
+  {title:'Qualcomm — Hardware / Software Engineer New Grad 2026 (H1B)',school:'Qualcomm',country:'USA',city:'San Diego',lat:32.7157,lng:-117.1611,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.qualcomm.com',source:'GitHub New-Grad-2026'},
+  {title:'IBM — Data / AI Engineer New Grad 2026 (H1B, Multiple US Locations)',school:'IBM',country:'USA',city:'Armonk',lat:41.1087,lng:-73.7197,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.ibm.com/employment/entry_level',source:'IBM Careers'},
 ];
 
 function spreadOverlappingPoints(data) {
@@ -283,10 +344,10 @@ const FIELD_COLORS = {
 };
 
 const FIELDS   = ['all',...Object.keys(FIELD_COLORS)];
-const TYPES    = ['all','phd','masters'];
+const TYPES    = ['all','phd','masters','job','postdoc'];
 const FUNDING  = ['all','funded','scholarship','ra/ta','partial funding','limited funding','self-funded'];
 const VISA     = ['all','visa friendly','unknown'];
-const CATEGORY = ['all','program','lab','conference'];
+const CATEGORY = ['all','program','lab','conference','job'];
 
 let aField='all', aType='all', aFunding='all', aVisa='all', aCategory='all', searchQ='';
 let markers=[], heatLayer;
@@ -334,10 +395,18 @@ function renderMap() {
   const plotted=spreadOverlappingPoints(data);
   const heat=data.map(d=>[d.lat,d.lng,d.type==='masters'?0.55:0.8]);
   heatLayer=L.heatLayer(heat,{radius:42,blur:30,maxZoom:8,gradient:{'0.2':'#3b82f6','0.5':'#f97316','0.8':'#e8ff4d','1.0':'#ffffff'}}).addTo(map);
-  plotted.forEach(d=>{
+  plotted.forEach((d,i)=>{
     const col=FIELD_COLORS[d.field]||'#e8ff4d';
-    const r=d.category==='conference'?4.5:d.type==='masters'?5:6;
-    const mk=L.circleMarker([d.plotLat,d.plotLng],{radius:r,fillColor:col,color:col,fillOpacity:0.9,opacity:0.7,weight:1.5})
+    const r=d.category==='conference'?5:d.type==='masters'?6:7;
+    const delay=(i%8)*0.3;
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="position:relative;width:${r*2}px;height:${r*2}px;">
+        <div style="position:absolute;inset:0;border-radius:50%;background:${col};animation:lm-blink 1.8s ease-in-out ${delay}s infinite;"></div>
+      </div>`,
+      iconSize:[r*2,r*2],iconAnchor:[r,r]
+    });
+    const mk=L.marker([d.plotLat,d.plotLng],{icon})
       .bindPopup(`<div style="font-family:'DM Mono',monospace;font-size:0.78rem;min-width:245px;line-height:1.5">
         <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;margin-bottom:6px">${d.title}</div>
         <div style="color:#4dffd4;margin-bottom:4px">🏛 ${d.school}</div>
@@ -424,7 +493,7 @@ fetch("opmap_edu_opportunities.json")
     OPP_DATA.length=0;
     json.data.forEach(d=>OPP_DATA.push(d));
     renderFilters();renderMap();renderList();
-    console.log("LocMappa Edu: "+OPP_DATA.length+" entries loaded");
+    console.log("LocMappa: "+OPP_DATA.length+" entries loaded");
   })
   .catch(()=>{renderFilters();renderMap();renderList();});
 
