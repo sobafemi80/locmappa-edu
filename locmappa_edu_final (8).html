@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LocMappa — Global PhD & Masters Opportunity Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+function simpleheat(c){if(!(this instanceof simpleheat))return new simpleheat(c);this._canvas=c=typeof c==="string"?document.getElementById(c):c;this._ctx=c.getContext("2d");this._width=c.width;this._height=c.height;this._max=1;this._data=[];}
+simpleheat.prototype={defaultRadius:25,defaultGradient:{0.4:"blue",0.6:"cyan",0.7:"lime",0.8:"yellow",1:"red"},data:function(d){this._data=d;return this;},max:function(m){this._max=m;return this;},add:function(p){this._data.push(p);return this;},clear:function(){this._data=[];return this;},radius:function(r,blur){blur=blur===undefined?15:blur;var circle=this._circle=this._createCanvas(),ctx=circle.getContext("2d"),r2=this._r=r+blur;circle.width=circle.height=r2*2;ctx.shadowOffsetX=ctx.shadowOffsetY=r2*2;ctx.shadowBlur=blur;ctx.shadowColor="black";ctx.beginPath();ctx.arc(-r2,0,r,0,Math.PI*2,true);ctx.closePath();ctx.fill();return this;},resize:function(){this._width=this._canvas.width;this._height=this._canvas.height;},gradient:function(grad){var canvas=this._createCanvas(),ctx=canvas.getContext("2d"),g=ctx.createLinearGradient(0,0,0,256);canvas.width=1;canvas.height=256;for(var i in grad)g.addColorStop(+i,grad[i]);ctx.fillStyle=g;ctx.fillRect(0,0,1,256);this._grad=ctx.getImageData(0,0,1,256).data;return this;},draw:function(mo){if(!this._circle)this.radius(this.defaultRadius);if(!this._grad)this.gradient(this.defaultGradient);var ctx=this._ctx;ctx.clearRect(0,0,this._width,this._height);for(var i=0,len=this._data.length,p;i<len;i++){p=this._data[i];ctx.globalAlpha=Math.min(Math.max(p[2]/this._max,mo===undefined?0.05:mo),1);ctx.drawImage(this._circle,p[0]-this._r,p[1]-this._r);}var col=ctx.getImageData(0,0,this._width,this._height);this._colorize(col.data,this._grad);ctx.putImageData(col,0,0);return this;},_colorize:function(px,grad){for(var i=3,len=px.length,j;i<len;i+=4){j=px[i]*4;if(j){px[i-3]=grad[j];px[i-2]=grad[j+1];px[i-1]=grad[j+2];}}},_createCanvas:function(){return document.createElement("canvas");}};
+(function(){L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(ll,o){this._latlngs=ll;L.setOptions(this,o);},setLatLngs:function(ll){this._latlngs=ll;return this.redraw();},addLatLng:function(ll){this._latlngs.push(ll);return this.redraw();},setOptions:function(o){L.setOptions(this,o);if(this._heat)this._updateOptions();return this.redraw();},redraw:function(){if(this._heat&&!this._frame&&this._map&&!this._map._animating)this._frame=L.Util.requestAnimFrame(this._redraw,this);return this;},onAdd:function(map){this._map=map;if(!this._canvas)this._initCanvas();map._panes.overlayPane.appendChild(this._canvas);map.on("moveend",this._reset,this);if(map.options.zoomAnimation&&L.Browser.any3d)map.on("zoomanim",this._animateZoom,this);this._reset();},onRemove:function(map){map.getPanes().overlayPane.removeChild(this._canvas);map.off("moveend",this._reset,this);if(map.options.zoomAnimation)map.off("zoomanim",this._animateZoom,this);},addTo:function(map){map.addLayer(this);return this;},_initCanvas:function(){var c=this._canvas=L.DomUtil.create("canvas","leaflet-layer");var an=this._map.options.zoomAnimation&&L.Browser.any3d;L.DomUtil.addClass(c,"leaflet-zoom-"+(an?"animated":"hide"));this._heat=simpleheat(c);this._updateOptions();},_updateOptions:function(){this._heat.radius(this.options.radius||this._heat.defaultRadius,this.options.blur);if(this.options.gradient)this._heat.gradient(this.options.gradient);if(this.options.minOpacity)this._heat.minOpacity(this.options.minOpacity);},_reset:function(){var tl=this._map.containerPointToLayerPoint([0,0]);L.DomUtil.setPosition(this._canvas,tl);var sz=this._map.getSize();if(this._heat._width!==sz.x)this._canvas.width=this._heat._width=sz.x;if(this._heat._height!==sz.y)this._canvas.height=this._heat._height=sz.y;this._redraw();},_redraw:function(){var data=[],r=this._heat._r,size=this._map.getSize(),bounds=new L.Bounds(L.point([-r,-r]),size.add([r,r])),max=this.options.max===undefined?1:this.options.max,maxZoom=this.options.maxZoom===undefined?this._map.getMaxZoom():this.options.maxZoom,v=1/Math.pow(2,Math.max(0,Math.min(maxZoom-this._map.getZoom(),12))),cs=r/2,grid=[],pp=this._map._getMapPanePos(),ox=pp.x%cs,oy=pp.y%cs,i,len,p,cell,x,y,j,l2,k;for(i=0,len=this._latlngs.length;i<len;i++){p=this._map.latLngToContainerPoint(this._latlngs[i]);if(bounds.contains(p)){x=Math.floor((p.x-ox)/cs)+2;y=Math.floor((p.y-oy)/cs)+2;var alt=this._latlngs[i].alt!==undefined?this._latlngs[i].alt:this._latlngs[i][2]!==undefined?+this._latlngs[i][2]:1;k=alt*v;grid[y]=grid[y]||[];cell=grid[y][x];if(!cell)grid[y][x]=[p.x,p.y,k];else{cell[0]=(cell[0]*cell[2]+p.x*k)/(cell[2]+k);cell[1]=(cell[1]*cell[2]+p.y*k)/(cell[2]+k);cell[2]+=k;}}}for(i=0,len=grid.length;i<len;i++)if(grid[i])for(j=0,l2=grid[i].length;j<l2;j++){cell=grid[i][j];if(cell)data.push([Math.round(cell[0]),Math.round(cell[1]),Math.min(cell[2],max)]);}this._heat.data(data).draw(this.options.minOpacity);this._frame=null;},_animateZoom:function(e){var sc=this._map.getZoomScale(e.zoom),off=this._map._getCenterOffset(e.center)._multiplyBy(-sc).subtract(this._map._getMapPanePos());if(L.DomUtil.setTransform)L.DomUtil.setTransform(this._canvas,off,sc);else this._canvas.style[L.DomUtil.TRANSFORM]=L.DomUtil.getTranslateString(off)+" scale("+sc+")";}});L.heatLayer=function(ll,o){return new L.HeatLayer(ll,o);};})();
+</script>
+<style>
+
+:root {
+  --bg:#07080f; --surface:#0e1018; --border:#1e2130; --accent:#e8ff4d;
+  --accent2:#4dffd4; --text:#e8eaf0; --muted:#5a5f7a; --pill-bg:#12141f; --danger:#fb7185;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:"DM Mono",monospace;overflow:hidden;}
+a{color:inherit;}
+#header{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:58px;
+  background:rgba(7,8,15,0.94);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:10px;font-family:"Syne",sans-serif;font-weight:800;font-size:1.25rem;letter-spacing:-0.02em;}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px var(--accent);opacity:1;}50%{box-shadow:0 0 20px var(--accent),0 0 40px rgba(232,255,77,0.25);opacity:0.7;}}
+.header-right{display:flex;align-items:center;gap:14px;}
+.badge{font-size:0.7rem;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:3px 10px;}
+.hbtn{font-family:"Syne",sans-serif;font-weight:700;font-size:0.78rem;background:var(--accent);color:#07080f;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;transition:all 0.15s;}
+.hbtn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(232,255,77,0.4);}
+.hbtn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+.hbtn-ghost:hover{border-color:var(--accent);color:var(--accent);transform:none;box-shadow:none;}
+#map{position:fixed;top:58px;left:0;right:0;bottom:0;z-index:1;}
+#panel{
+  position:fixed;top:78px;left:20px;z-index:900;width:300px;max-height:400px;
+  background:rgba(14,16,24,0.93);backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;animation:slideIn 0.5s ease;
+  max-height:calc(100vh - 112px);display:flex;flex-direction:column;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:translateX(0);}}
+.panel-head{padding:16px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.panel-title{font-family:"Syne",sans-serif;font-weight:700;font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);}
+.stat-row{display:flex;gap:18px;margin-top:12px;}
+.stat{display:flex;flex-direction:column;gap:2px;}
+.stat-n{font-family:"Syne",sans-serif;font-weight:800;font-size:1.55rem;color:var(--accent);line-height:1;}
+.stat-l{font-size:0.65rem;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;}
+.search-wrap{padding:10px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:"DM Mono",monospace;font-size:0.78rem;color:var(--text);outline:none;transition:border-color 0.2s;}
+.search-input::placeholder{color:var(--muted);}
+.search-input:focus{border-color:rgba(232,255,77,0.55);}
+.panel-scroll{overflow-y:auto;flex:1;}
+.panel-scroll::-webkit-scrollbar{width:3px;}
+.panel-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.sec{padding:10px 18px;border-bottom:1px solid var(--border);}
+.sec-title{font-size:0.6rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:7px;}
+.pills{display:flex;flex-wrap:wrap;gap:5px;}
+.pill{font-size:0.66rem;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--pill-bg);color:var(--muted);cursor:pointer;transition:all 0.12s;white-space:nowrap;}
+.pill:hover,.pill.active{border-color:var(--accent);color:var(--accent);background:rgba(232,255,77,0.07);}
+.note-box{padding:10px 18px;border-bottom:1px solid var(--border);}
+.note{font-size:0.67rem;color:var(--muted);line-height:1.5;}
+.note strong{color:var(--text);}
+#job-list{}
+.job-item{padding:11px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;}
+.job-item:hover{background:rgba(232,255,77,0.04);}
+.job-title{font-family:"Syne",sans-serif;font-size:0.74rem;font-weight:600;line-height:1.35;margin-bottom:4px;}
+.job-co{font-size:0.64rem;color:var(--accent2);margin-bottom:4px;}
+.job-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.job-loc{font-size:0.62rem;color:var(--muted);}
+.tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.tag{font-size:0.56rem;padding:2px 6px;border-radius:3px;}
+.tag-field{border:1px solid rgba(77,255,212,0.2);background:rgba(77,255,212,0.07);color:var(--accent2);}
+.tag-type{border:1px solid rgba(249,115,22,0.2);background:rgba(249,115,22,0.07);color:#f97316;}
+.tag-level{border:1px solid rgba(232,255,77,0.15);background:rgba(232,255,77,0.06);color:var(--accent);}
+.tag-remote{border:1px solid rgba(99,102,241,0.25);background:rgba(99,102,241,0.08);color:#818cf8;}
+#bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:900;height:44px;
+  background:rgba(7,8,15,0.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;gap:36px;
+}
+.bs{display:flex;align-items:center;gap:7px;font-size:0.7rem;}
+.bd{width:6px;height:6px;border-radius:50%;}
+.bl{color:var(--muted);}
+.bv{color:var(--text);}
+.modal-ov{display:none;position:fixed;inset:0;z-index:2000;background:rgba(7,8,15,0.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;max-width:480px;width:90%;animation:mIn 0.28s ease;}
+@keyframes mIn{from{opacity:0;transform:scale(0.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.mx{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;}
+.mtag{font-size:0.66rem;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;}
+.mtitle{font-family:"Syne",sans-serif;font-weight:800;font-size:1.5rem;line-height:1.2;margin-bottom:8px;}
+.msub{font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:22px;}
+.msub span{color:var(--accent);}
+.mrow{display:flex;gap:8px;margin-bottom:13px;}
+.minput{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-family:"DM Mono",monospace;font-size:0.8rem;color:var(--text);outline:none;}
+.minput:focus{border-color:rgba(232,255,77,0.55);}
+.msub-btn{font-family:"Syne",sans-serif;font-weight:700;font-size:0.8rem;background:var(--accent);color:#07080f;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;white-space:nowrap;}
+.mnote{font-size:0.66rem;color:var(--muted);text-align:center;}
+.success{display:none;text-align:center;}
+.sico{font-size:2.2rem;margin-bottom:14px;}
+.stitle{font-family:"Syne",sans-serif;font-weight:800;font-size:1.35rem;margin-bottom:7px;color:var(--accent);}
+.ssub{font-size:0.78rem;color:var(--muted);line-height:1.6;}
+@keyframes lm-blink{0%,100%{opacity:1;}50%{opacity:0.15;}}
+@media(max-width:900px){
+  #panel{width:calc(100vw - 24px);left:12px;top:68px;}
+  #bottom-bar{gap:14px;padding:0 12px;overflow-x:auto;}
+  .badge{display:none;}
+}
+
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <span style="color:#fff">Loc</span><span style="color:var(--accent)">Mappa</span>
+    <span style="font-weight:400;color:var(--muted);font-size:0.85rem;font-family:'DM Mono',monospace;margin-left:4px">/ opportunities</span>
+  </div>
+  <div class="header-right">
+    <div class="badge">&#9679; updated weekly</div>
+    <button class="hbtn hbtn-ghost" onclick="openAuthModal('signin')">Sign In</button>
+    <button class="hbtn hbtn-ghost" onclick="openAuthModal('signup')" style="background:transparent;color:var(--text);border:1px solid var(--border)">Sign Up</button>
+    <button class="hbtn" onclick="openAlertsModal()">Get Alerts &#8594;</button>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div id="panel">
+  <div class="panel-head">
+    <div class="panel-title">Live Global Opportunity Map</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n" id="count-num">0</div><div class="stat-l">Active Openings</div></div>
+      <div class="stat"><div class="stat-n" id="country-num">0</div><div class="stat-l">Countries</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--accent2)" id="new-num">0</div><div class="stat-l">New This Week</div></div>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="search" placeholder="search field, school, country, keyword..." oninput="filterList()"/>
+  </div>
+  <div class="panel-scroll">
+    <div class="sec"><div class="sec-title">Field</div><div class="pills" id="field-pills"></div></div>
+    <div class="sec"><div class="sec-title">Program Type</div><div class="pills" id="type-pills"></div></div>
+    <div class="sec"><div class="sec-title">Funding</div><div class="pills" id="funding-pills"></div></div>
+    <div class="sec"><div class="sec-title">Visa</div><div class="pills" id="visa-pills"></div></div>
+    <div class="sec"><div class="sec-title">Category</div><div class="pills" id="cat-pills"></div></div>
+    <div class="note-box">
+      <div class="note"><strong>LocMappa</strong> turns scattered PhD and Masters opportunities into a visual map. Spot funding clusters, filter by field or category, and apply faster.</div>
+    </div>
+    <div id="opp-list"></div>
+  </div>
+</div>
+
+<div id="bottom-bar">
+  <div class="bs"><div class="bd" style="background:#e8ff4d;box-shadow:0 0 6px #e8ff4d"></div><div class="bl">High density</div></div>
+  <div class="bs"><div class="bd" style="background:#f97316"></div><div class="bl">Medium</div></div>
+  <div class="bs"><div class="bd" style="background:#3b82f6"></div><div class="bl">Low</div></div>
+  <div class="bs" style="margin-left:auto"><span class="bl">sources:</span><span class="bv">&nbsp;EURAXESS &middot; jobs.ac.uk &middot; HigherEdJobs &middot; Nature Careers &middot; Scholarship RSS</span></div>
+</div>
+
+
+
+<script>
+
+const OPP_DATA = [
+  { title: 'GeoInstitute Graduate Research Lab Openings', school: 'Colorado School of Mines', country: 'USA', city: 'Golden', lat: 39.7555, lng: -105.2211, field: 'energy', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'lab', link: 'https://www.mines.edu/' },
+  { title: 'Subsurface AI Lab Recruiting MS and PhD Students', school: 'Stanford University', country: 'USA', city: 'Stanford', lat: 37.4275, lng: -122.1697, field: 'ai/ml', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'lab', link: 'https://stanford.edu/' },
+  { title: 'Computational Geoscience Lab Openings', school: 'University of Calgary', country: 'Canada', city: 'Calgary', lat: 51.0447, lng: -114.0719, field: 'cfd', type: 'phd', funding: 'ra/ta', visa: 'visa friendly', category: 'lab', link: 'https://www.ucalgary.ca/' },
+  { title: 'Master in Petroleum Data Analytics', school: 'University of Houston', country: 'USA', city: 'Houston', lat: 29.7604, lng: -95.3698, field: 'data', type: 'masters', funding: 'partial funding', visa: 'unknown', category: 'program', link: 'https://www.uh.edu/' },
+  { title: 'Funded PhD in Basin Modelling and Stratigraphy', school: 'University of Bergen', country: 'Norway', city: 'Bergen', lat: 60.3913, lng: 5.3221, field: 'energy', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.uib.no/en' },
+  { title: 'MS in Geophysics and Seismic Imaging', school: 'Rice University', country: 'USA', city: 'Houston', lat: 29.7174, lng: -95.4018, field: 'energy', type: 'masters', funding: 'partial funding', visa: 'unknown', category: 'program', link: 'https://www.rice.edu/' },
+  { title: 'Funded PhD in Reservoir Simulation and Energy Transition', school: 'Imperial College London', country: 'UK', city: 'London', lat: 51.5072, lng: -0.1276, field: 'energy', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.imperial.ac.uk/' },
+  { title: 'Machine Learning for Geoscience Lab Openings', school: 'University of Leeds', country: 'UK', city: 'Leeds', lat: 53.8008, lng: -1.5491, field: 'ai/ml', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'lab', link: 'https://www.leeds.ac.uk/' },
+  { title: 'MSc in Subsurface Engineering', school: 'TU Munich', country: 'Germany', city: 'Munich', lat: 48.1351, lng: 11.5820, field: 'energy', type: 'masters', funding: 'scholarship', visa: 'visa friendly', category: 'program', link: 'https://www.tum.de/' },
+  { title: 'Research Group Seeking Graduate Students in Carbon Storage', school: 'NTNU', country: 'Norway', city: 'Trondheim', lat: 63.4305, lng: 10.3951, field: 'energy', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'lab', link: 'https://www.ntnu.edu/' },
+  { title: 'Graduate Opportunities in Environmental Fluid Mechanics', school: 'University of Illinois Urbana-Champaign', country: 'USA', city: 'Urbana', lat: 40.1106, lng: -88.2073, field: 'cfd', type: 'phd', funding: 'ra/ta', visa: 'visa friendly', category: 'program', link: 'https://illinois.edu/' },
+  { title: 'Funded PhD in Computational Fluid Dynamics for Clean Energy', school: 'ETH Zurich', country: 'Switzerland', city: 'Zurich', lat: 47.3769, lng: 8.5417, field: 'cfd', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://ethz.ch/en/studies.html' },
+  { title: 'MS in Mechanical Engineering with Research Assistantship', school: 'University of Michigan', country: 'USA', city: 'Ann Arbor', lat: 42.2808, lng: -83.7430, field: 'mechanical engineering', type: 'masters', funding: 'ra/ta', visa: 'unknown', category: 'program', link: 'https://me.engin.umich.edu/graduate/' },
+  { title: 'PhD in AI for Climate and Earth Systems', school: 'Imperial College London', country: 'UK', city: 'London', lat: 51.5072, lng: -0.1276, field: 'ai/ml', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.imperial.ac.uk/study/pg/' },
+  { title: 'Master of Data Science Scholarship Opportunity', school: 'University of Melbourne', country: 'Australia', city: 'Melbourne', lat: -37.8136, lng: 144.9631, field: 'data', type: 'masters', funding: 'scholarship', visa: 'unknown', category: 'program', link: 'https://study.unimelb.edu.au/' },
+  { title: 'Funded PhD in Semiconductor Materials', school: 'National University of Singapore', country: 'Singapore', city: 'Singapore', lat: 1.3521, lng: 103.8198, field: 'semiconductors', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.nus.edu.sg/' },
+  { title: 'MSc in Computational Chemistry', school: 'University of Cambridge', country: 'UK', city: 'Cambridge', lat: 52.2053, lng: 0.1218, field: 'chemistry', type: 'masters', funding: 'limited funding', visa: 'visa friendly', category: 'program', link: 'https://www.postgraduate.study.cam.ac.uk/' },
+  { title: 'PhD in Aerospace Structures and Design', school: 'TU Delft', country: 'Netherlands', city: 'Delft', lat: 52.0116, lng: 4.3571, field: 'aerospace engineering', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.tudelft.nl/en/education/programmes' },
+  { title: 'MS in Robotics and Autonomous Systems', school: 'Carnegie Mellon University', country: 'USA', city: 'Pittsburgh', lat: 40.4406, lng: -79.9959, field: 'robotics', type: 'masters', funding: 'partial funding', visa: 'unknown', category: 'program', link: 'https://www.cmu.edu/' },
+  { title: 'PhD in Civil and Environmental Engineering', school: 'University of Toronto', country: 'Canada', city: 'Toronto', lat: 43.6532, lng: -79.3832, field: 'civil engineering', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.utoronto.ca/' },
+  { title: 'MSc in Electrical Engineering', school: 'KAUST', country: 'Saudi Arabia', city: 'Thuwal', lat: 22.3080, lng: 39.1047, field: 'electrical engineering', type: 'masters', funding: 'funded', visa: 'visa friendly', category: 'program', link: 'https://www.kaust.edu.sa/en/study' },
+  { title: 'AI & Robotics Lab Recruiting Graduate Students', school: 'University of Edinburgh', country: 'UK', city: 'Edinburgh', lat: 55.9533, lng: -3.1883, field: 'robotics', type: 'phd', funding: 'funded', visa: 'visa friendly', category: 'lab', link: 'https://www.ed.ac.uk/' },
+  { title: 'Computational Energy Systems Lab Openings', school: 'RWTH Aachen', country: 'Germany', city: 'Aachen', lat: 50.7753, lng: 6.0839, field: 'cfd', type: 'phd', funding: 'ra/ta', visa: 'visa friendly', category: 'lab', link: 'https://www.rwth-aachen.de/' },
+  {title:'APS March Meeting 2026', school:'Conference', country:'USA', city:'Los Angeles', lat:34.0522, lng:-118.2437, field:'physics', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-03-16', link:'https://www.aps.org/meetings/march/', source:'OpMap Seed'},
+  {title:'MRS Spring Meeting 2026', school:'Conference', country:'USA', city:'Seattle', lat:47.6062, lng:-122.3321, field:'materials science', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-04-06', link:'https://www.mrs.org/meetings-events', source:'OpMap Seed'},
+  {title:'EGU General Assembly 2026', school:'Conference', country:'Austria', city:'Vienna', lat:48.2082, lng:16.3738, field:'climate/env', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-04-19', link:'https://www.egu.eu/meetings/general-assembly/', source:'OpMap Seed'},
+  {title:'ICLR 2026', school:'Conference', country:'Singapore', city:'Singapore', lat:1.3521, lng:103.8198, field:'ai/ml', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-04-27', link:'https://iclr.cc/', source:'OpMap Seed'},
+  {title:'ICRA 2026', school:'Conference', country:'USA', city:'Atlanta', lat:33.749, lng:-84.388, field:'robotics', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-05-18', link:'https://2026.ieee-icra.org/', source:'OpMap Seed'},
+  {title:'EAGE Annual 2026', school:'Conference', country:'Austria', city:'Vienna', lat:48.2082, lng:16.3738, field:'energy', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-06-08', link:'https://eage.org/', source:'OpMap Seed'},
+  {title:'CVPR 2026', school:'Conference', country:'USA', city:'Denver', lat:39.7392, lng:-104.9903, field:'ai/ml', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-06-14', link:'https://cvpr.thecvf.com/', source:'OpMap Seed'},
+  {title:'RSS 2026', school:'Conference', country:'USA', city:'Los Angeles', lat:34.0522, lng:-118.2437, field:'robotics', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-06-21', link:'https://roboticsconference.org/', source:'OpMap Seed'},
+  {title:'ISMB 2026', school:'Conference', country:'USA', city:'Chicago', lat:41.8781, lng:-87.6298, field:'biotech', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-07-20', link:'https://www.iscb.org/ismb2026', source:'OpMap Seed'},
+  {title:'ICML 2026', school:'Conference', country:'South Korea', city:'Seoul', lat:37.5665, lng:126.978, field:'ai/ml', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-07-12', link:'https://icml.cc/', source:'OpMap Seed'},
+  {title:'ACL 2026', school:'Conference', country:'USA', city:'San Diego', lat:32.7157, lng:-117.1611, field:'ai/ml', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-07-26', link:'https://2026.aclweb.org/', source:'OpMap Seed'},
+  {title:'KDD 2026', school:'Conference', country:'South Korea', city:'Jeju', lat:33.4996, lng:126.5312, field:'data', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-08-03', link:'https://kdd.org/', source:'OpMap Seed'},
+  {title:'SIGCOMM 2026', school:'Conference', country:'South Korea', city:'Seoul', lat:37.5665, lng:126.978, field:'software', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-08-10', link:'https://sigcomm.org/', source:'OpMap Seed'},
+  {title:'SEG IMAGE 2026 (SEG + AAPG Annual)', school:'Conference', country:'USA', city:'Houston', lat:29.7604, lng:-95.3698, field:'energy', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-08-17', link:'https://seg.org/image', source:'OpMap Seed'},
+  {title:'NABG 45th Annual Technical Conference', school:'Conference', country:'USA', city:'TBD', lat:37.09, lng:-95.71, field:'energy', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-09-01', link:'https://www.nabg-us.org/conference/', source:'OpMap Seed'},
+  {title:'ACM CHI 2026', school:'Conference', country:'Spain', city:'Barcelona', lat:41.3874, lng:2.1686, field:'software', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-04-13', link:'https://chi2026.acm.org/'},
+  {title:'ICSE 2026', school:'Conference', country:'Brazil', city:'Rio de Janeiro', lat:-22.9068, lng:-43.1729, field:'software', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-04-12', link:'https://conf.researchr.org/home/icse-2026'},
+  {title:'IJCAI 2026', school:'Conference', country:'Germany', city:'Bremen', lat:53.0793, lng:8.8017, field:'ai/ml', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-08-08', link:'https://ijcai-26.org/'},
+  {title:'ECCV 2026', school:'Conference', country:'Sweden', city:'Malmö', lat:55.605, lng:13.0038, field:'ai/ml', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-09-08', link:'https://eccv.ecva.net/'},
+  {title:'SIGIR 2026', school:'Conference', country:'Australia', city:'Melbourne', lat:-37.8136, lng:144.9631, field:'data', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-07-19', link:'https://sigir-2026.org/'},
+  {title:'IEEE EMBC 2026', school:'Conference', country:'Canada', city:'Toronto', lat:43.6532, lng:-79.3832, field:'biotech', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-07-26', link:'https://embc.embs.org/2026/'},
+  {title:'AAPG Annual Convention 2026', school:'Conference', country:'USA', city:'New Orleans', lat:29.9511, lng:-90.0715, field:'energy', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-05-31', link:'https://www.aapg.org/'},
+  {title:'ASCE INSPIRE 2026', school:'Conference', country:'USA', city:'Chicago', lat:41.8781, lng:-87.6298, field:'civil engineering', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-06-07', link:'https://www.asce.org/'},
+  {title:'IEEE ISCAS 2026', school:'Conference', country:'Japan', city:'Nagoya', lat:35.1815, lng:136.9066, field:'electrical engineering', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-05-24', link:'https://iscas2026.ieee-cas.org/'},
+  {title:'Symposia on VLSI Technology & Circuits 2026', school:'Conference', country:'Japan', city:'Kyoto', lat:35.0116, lng:135.7681, field:'semiconductors', type:'phd', funding:'self-funded', visa:'unknown', category:'conference', eventDate:'2026-06-14', link:'https://www.vlsisymposium.org/'},
+  {title:'ISTA PhD Programme 2026 — Fully Funded (CS, Physics, Data Science, Earth Science)',school:'Institute of Science and Technology Austria',country:'Austria',city:'Vienna',lat:48.2082,lng:16.3738,field:'data',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://phd.ista.ac.at/',source:'EURAXESS'},
+  {title:'GENIUS MSCA PhD — Energy Geostructures (15 positions across Europe)',school:'University of Edinburgh / NTNU / Politecnico di Torino',country:'UK',city:'Edinburgh',lat:55.9533,lng:-3.1883,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://euraxess.ec.europa.eu/worldwide/india/news/europe-15-fully-funded-phd-candidate-positions-genius-msca-doctoral-network',source:'EURAXESS'},
+  {title:'PhD — NLP Multimodal and Multi-agent Systems',school:'University of Technology Nuremberg',country:'Germany',city:'Nuremberg',lat:49.4521,lng:11.0767,field:'ai/ml',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.utn.de/',source:'EURAXESS'},
+  {title:'PhD — Experimental Combustion Dynamics',school:'Technical University Berlin',country:'Germany',city:'Berlin',lat:52.52,lng:13.405,field:'mechanical engineering',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.tu.berlin/',source:'EURAXESS'},
+  {title:'PhD — Life Sciences and AI/ML Applications',school:'Medical University of Vienna',country:'Austria',city:'Vienna',lat:48.2082,lng:16.3738,field:'ai/ml',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.meduniwien.ac.at/',source:'EURAXESS'},
+  {title:'PhD Research Fellow — Computational Mathematics',school:'University of Bergen',country:'Norway',city:'Bergen',lat:60.3913,lng:5.3221,field:'data',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.uib.no/en',source:'EURAXESS'},
+  {title:'PhD Stipend — Hydropower and Renewable Energy Systems',school:'NTNU Norwegian University of Science and Technology',country:'Norway',city:'Trondheim',lat:63.4305,lng:10.3951,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.ntnu.edu/',source:'EURAXESS'},
+  {title:'PhD — Quantum Computing for Detector Simulation',school:'DESY Hamburg',country:'Germany',city:'Hamburg',lat:53.5753,lng:10.0153,field:'physics',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.desy.de/',source:'EURAXESS'},
+  {title:'PhD Stipend — Applied Power Electronics Systems',school:'Aalborg University AAU Energy',country:'Denmark',city:'Aalborg',lat:57.0488,lng:9.9217,field:'electrical engineering',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.en.aau.dk/',source:'EURAXESS'},
+  {title:'NSF Graduate Research Fellowship Program 2026',school:'US National Science Foundation',country:'USA',city:'Washington DC',lat:38.9072,lng:-77.0369,field:'software',type:'phd',funding:'funded',visa:'unknown',category:'program',link:'https://www.nsfgrfp.org/',source:'EURAXESS'},
+  {title:'DOE Computational Science Graduate Fellowship 2026',school:'US Department of Energy',country:'USA',city:'Washington DC',lat:38.9072,lng:-77.0369,field:'data',type:'phd',funding:'funded',visa:'unknown',category:'program',link:'https://www.krellinst.org/csgf/',source:'EURAXESS'},
+  {title:'Erasmus Mundus EMINENT Scholarship 2026-2028 — Nanosystems Engineering MSc',school:'Erasmus Mundus Consortium',country:'Netherlands',city:'Eindhoven',lat:51.4416,lng:5.4697,field:'semiconductors',type:'masters',funding:'scholarship',visa:'visa friendly',category:'program',link:'https://eminent-master.eu/',source:'EURAXESS'},
+  {title:'MSCA Doctoral Network — 120 Funded PhD Positions Across Europe',school:'Multiple European Universities',country:'Germany',city:'Berlin',lat:52.52,lng:13.405,field:'software',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://euraxess.ec.europa.eu',source:'EURAXESS'},
+  {title:'PhD — Self-Driving Labs for Electrolyte Research',school:'Uppsala University',country:'Sweden',city:'Uppsala',lat:59.8586,lng:17.6389,field:'chemistry',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.uu.se/en',source:'EURAXESS'},
+  {title:'PhD — Hydrodynamics of Droplet-Laser Interaction for EUV Lithography',school:'University of Amsterdam',country:'Netherlands',city:'Amsterdam',lat:52.3676,lng:4.9041,field:'physics',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.uva.nl/en',source:'EURAXESS'},
+  {title:'PhD — Smart Materials and Solid-State Batteries',school:'Institut Neel CNRS',country:'France',city:'Grenoble',lat:45.1885,lng:5.7245,field:'materials science',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://neel.cnrs.fr/',source:'EURAXESS'},
+  {title:'PhD — Information Systems and Data Engineering',school:'Lulea University of Technology',country:'Sweden',city:'Lulea',lat:65.6169,lng:22.1368,field:'software',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.ltu.se/en',source:'EURAXESS'},
+  {title:'PhD — Value Delivery Analysis in Megaprojects',school:'NTNU Norwegian University of Science and Technology',country:'Norway',city:'Trondheim',lat:63.4305,lng:10.3951,field:'civil engineering',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.ntnu.edu/',source:'EURAXESS'},
+  {title:'PhD — Computational Dosimetry for Interventional Radiology',school:'Belgian Nuclear Research Centre SCK CEN',country:'Belgium',city:'Mol',lat:51.191,lng:5.0957,field:'physics',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.sckcen.be/',source:'EURAXESS'},
+  {title:'Choose Europe for Science — Extended Postdoctoral Fellowships 2025-2026',school:'Various European Institutions MSCA',country:'Germany',city:'Munich',lat:48.1351,lng:11.582,field:'software',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://euraxess.ec.europa.eu/jobs',source:'EURAXESS'},
+  {title:'PhD — Sedimentology and Petrography, Alluvial Fan Systems',school:'University of Oslo',country:'Norway',city:'Oslo',lat:59.9139,lng:10.7522,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.sepm.org/jobs',source:'SEPM'},
+  {title:'PhD — Sedimentology, University of Bern and Imperial College London (Jan 2026)',school:'University of Bern / Imperial College London',country:'Switzerland',city:'Bern',lat:46.948,lng:7.4474,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.sepm.org/jobs',source:'SEPM'},
+  {title:'PhD — Subsurface Reservoir Characterisation, CrossScale Project',school:'Delft University of Technology',country:'Netherlands',city:'Delft',lat:52.0116,lng:4.3571,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.tudelft.nl',source:'ApplyKite'},
+  {title:'PhD — Geoscience and Engineering, Khalifa University Scholarship 2026',school:'Khalifa University',country:'UAE',city:'Abu Dhabi',lat:24.4539,lng:54.3773,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'program',link:'https://www.ku.ac.ae',source:'ApplyKite'},
+  {title:'PhD — Geology and Sustainable Mining (TEXMiN Fellowship 2026)',school:'IIT Indian School of Mines Dhanbad',country:'India',city:'Dhanbad',lat:23.7957,lng:86.4304,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.iitism.ac.in',source:'ApplyKite'},
+  {title:'Postdoc — Subsurface Geological Modelling for CO2 Storage, Permian Basin',school:'University of Texas Permian Basin',country:'USA',city:'Odessa',lat:31.8457,lng:-102.3676,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.higheredjobs.com/faculty/details.cfm?JobCode=179156477',source:'HigherEdJobs'},
+  {title:'Postdoc — Geophysical Fluid Dynamics / Atmospheric and Oceanic Sciences',school:'Princeton University / NOAA GFDL',country:'USA',city:'Princeton',lat:40.3573,lng:-74.6672,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://geosciences.princeton.edu/jobs',source:'Princeton Geosciences'},
+  {title:'Postdoc — Lori Summa and Awwiller Fellowship in Geosciences',school:'UC Davis Department of Earth and Planetary Sciences',country:'USA',city:'Davis',lat:38.5382,lng:-121.7617,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://findajob.agu.org/jobs/postdoctoral-/',source:'AGU'},
+  {title:'Postdoc — Kunqiong Fellowship in Geophysics',school:'University of Science and Technology of China',country:'China',city:'Hefei',lat:31.8206,lng:117.2272,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://findajob.agu.org/jobs/postdoctoral-/',source:'AGU'},
+  {title:'Postdoc — Ultrahigh-Pressure Mineral Physics and Geophysics (3 years)',school:'ETH Zurich Institute of Geochemistry and Petrology',country:'Switzerland',city:'Zurich',lat:47.3769,lng:8.5417,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.applykite.com/search/positions/postdoc/all/geology',source:'ApplyKite'},
+  {title:'Postdoc — Economic Geology and Mineral Systems Exploration (Zambia), Industry-funded',school:'University of Leicester / Ivanhoe Mines',country:'UK',city:'Leicester',lat:52.6369,lng:-1.1398,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.applykite.com/search/positions/postdoc/all/geology',source:'ApplyKite'},
+  {title:'Postdoc — Next-Generation Reservoir Modelling, DeepNL NWO Programme',school:'Delft University of Technology',country:'Netherlands',city:'Delft',lat:52.0116,lng:4.3571,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.tudelft.nl',source:'ApplyKite'},
+  {title:'Postdoc — CO2 Storage Reservoir Characterisation, CCUS Geosciences',school:'University of Texas Permian Basin',country:'USA',city:'Odessa',lat:31.8457,lng:-102.3676,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.higheredjobs.com',source:'HigherEdJobs'},
+  {title:'Postdoc — Structural Geology and Salt Tectonics, Hydrogen Storage Project',school:'University of Barcelona',country:'Spain',city:'Barcelona',lat:41.3851,lng:2.1734,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://euraxess.ec.europa.eu/jobs/90967',source:'EURAXESS'},
+  {title:'Postdoc — Seismology and Geophysics (Engineering Seismology)',school:'University of Memphis',country:'USA',city:'Memphis',lat:35.1495,lng:-90.049,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Distributed Acoustic Sensing (DAS) Geophysics',school:'University of Washington',country:'USA',city:'Seattle',lat:47.6062,lng:-122.3321,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Icy Ocean World Interiors, Institute for Geophysics',school:'University of Texas at Austin',country:'USA',city:'Austin',lat:30.2849,lng:-97.7341,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Applied Geophysics, Geoscience and Environmental Technology',school:'Lulea University of Technology',country:'Sweden',city:'Lulea',lat:65.6169,lng:22.1368,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/applied-geophysics-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Structural Geology, Department of Earth Science',school:'University of Bergen',country:'Norway',city:'Bergen',lat:60.3913,lng:5.3221,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/geology-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Geology and Sustainable Mining Institute (18 months)',school:'Mohammed VI Polytechnic University UM6P',country:'Morocco',city:'Benguerir',lat:32.233,lng:-7.9568,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/geology-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Earth Sciences and Geology',school:'SUNY University at Buffalo',country:'USA',city:'Buffalo',lat:42.8864,lng:-78.8784,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/geology-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Marine Geology, Physical Oceanography and Coastal Dynamics',school:'Second Institute of Oceanography MNR China',country:'China',city:'Hangzhou',lat:30.2741,lng:120.1551,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.nature.com/naturecareers/jobs/earth-science/postdoctoral/',source:'Nature Careers'},
+  {title:'Postdoc — Isotope Geochemistry, High-Precision Analyses',school:'Academic Positions — European Institutions',country:'Germany',city:'Berlin',lat:52.52,lng:13.405,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://academicpositions.com/jobs/position/post-doc/field/geosciences',source:'Academic Positions'},
+  {title:'Postdoc — Arctic Coastal Biogeochemical Cycling and Glacier Dynamics (3 positions)',school:'Norwegian Research Institutions',country:'Norway',city:'Oslo',lat:59.9139,lng:10.7522,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.nature.com/naturecareers/jobs/earth-science/postdoctoral/',source:'Nature Careers'},
+  {title:'Postdoc — Future Faculty in Physical Sciences Fellowship (Geophysics)',school:'Princeton University',country:'USA',city:'Princeton',lat:40.3573,lng:-74.6672,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://geosciences.princeton.edu/jobs',source:'Princeton Geosciences'},
+  {title:'Postdoc — NYU Abu Dhabi, Applied Geophysics and Engineering',school:'New York University Abu Dhabi',country:'UAE',city:'Abu Dhabi',lat:24.5247,lng:54.4337,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://scholarshipdb.net/applied-geophysics-scholarships/Program-Postdoctoral',source:'ScholarshipDB'},
+  {title:'Postdoc — Carbon Geo-Sequestration and Reservoir Characterisation',school:'Colorado School of Mines',country:'USA',city:'Golden',lat:39.7555,lng:-105.2211,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Earth and Atmospheric Sciences, School of EAS',school:'Georgia Tech',country:'USA',city:'Atlanta',lat:33.749,lng:-84.388,field:'climate/env',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'Postdoc — Geological Oceanography / Marine Geophysics (Tenure-track)',school:'University of South Florida St. Petersburg',country:'USA',city:'St. Petersburg',lat:27.7676,lng:-82.6403,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.us-ocb.org/science-support/jobs-and-postdocs/',source:'OCB'},
+  {title:'Postdoc — Seismic Inversion and Geophysical Modelling',school:'University of Texas at Austin — Prof. Mrinal Sen',country:'USA',city:'Austin',lat:30.2849,lng:-97.7341,field:'energy',type:'phd',funding:'funded',visa:'visa friendly',category:'lab',link:'https://www.indeed.com/q-postdoctoral-geophysics-jobs.html',source:'Indeed'},
+  {title:'NVIDIA — Software Dev Engineer in Test, New Grad 2026 ($100k-$190k, H1B)',school:'NVIDIA',country:'USA',city:'Austin',lat:30.2672,lng:-97.7431,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Developer Technology Engineer, New Grad 2026 ($124k-$242k, H1B)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.3541,lng:-121.9552,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Research Scientist PhD New Grad 2026 ($168k-$265k, H1B)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.3541,lng:-121.9552,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://research.nvidia.com/labs/amri/post/fulltime_for_2026/',source:'NVIDIA Research'},
+  {title:'NVIDIA — Firmware Engineer New Grad 2026 - Memory Subsystem ($124k-$242k)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.355,lng:-121.96,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Silicon Co-Design Engineer New Grad 2026 ($100k-$167k, H1B)',school:'NVIDIA',country:'USA',city:'Santa Clara',lat:37.3542,lng:-121.9545,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.nvidia.com',source:'Simplify Jobs'},
+  {title:'NVIDIA — Research Scientist, AI-Mediated Reality New Grad 2026 (H1B)',school:'NVIDIA Research',country:'USA',city:'Santa Clara',lat:37.3538,lng:-121.9558,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://research.nvidia.com/labs/amri/post/fulltime_for_2026/',source:'NVIDIA Research'},
+  {title:'NVIDIA Graduate Fellowship 2026-2027 — PhD Fellowship (CS/EE/Physics)',school:'NVIDIA Research',country:'USA',city:'Santa Clara',lat:37.353,lng:-121.9565,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://research.nvidia.com/graduate-fellowships',source:'NVIDIA Research'},
+  {title:'Meta — EMC Design Engineer, University Grad (H1B)',school:'Meta Platforms',country:'USA',city:'Redmond',lat:47.674,lng:-122.1215,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.metacareers.com/careerprograms/students',source:'Meta Careers'},
+  {title:'Meta — Research Scientist Postdoc, Generative AI and ML (H1B)',school:'Meta AI Research',country:'USA',city:'New York',lat:40.7128,lng:-74.006,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.metacareers.com/careerprograms/students',source:'Meta Careers'},
+  {title:'Salesforce — Sales Development Representative New Grad ($52k-$69k, H1B)',school:'Salesforce',country:'USA',city:'San Francisco',lat:37.7749,lng:-122.4194,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.salesforce.com',source:'Simplify Jobs'},
+  {title:'Salesforce — Commercial Graduate Sales, Dublin (H1B/Work Visa)',school:'Salesforce',country:'Ireland',city:'Dublin',lat:53.3498,lng:-6.2603,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.salesforce.com',source:'Simplify Jobs'},
+  {title:'Google — Software Engineer New Grad 2026 (H1B, Multiple Locations)',school:'Google',country:'USA',city:'Mountain View',lat:37.3861,lng:-122.0839,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.google.com/jobs/results/?degree=BACHELORS&employment_type=FULL_TIME&jlo=en_US&q=new+grad',source:'Google Careers'},
+  {title:'Google — Research Scientist New Grad 2026 (H1B)',school:'Google DeepMind',country:'USA',city:'San Francisco',lat:37.7749,lng:-122.4194,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.google.com',source:'Google Careers'},
+  {title:'Google — Data Scientist New Grad 2026 (H1B, NYC/SF/Seattle)',school:'Google',country:'USA',city:'New York',lat:40.7128,lng:-74.006,field:'data',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.google.com',source:'Google Careers'},
+  {title:'Amazon — Software Development Engineer New Grad 2026 (H1B)',school:'Amazon',country:'USA',city:'Seattle',lat:47.6062,lng:-122.3321,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.amazon.jobs/en/teams/university-tech',source:'Amazon Jobs'},
+  {title:'Amazon — Data Engineer New Grad 2026 (H1B, AWS)',school:'Amazon Web Services',country:'USA',city:'Seattle',lat:47.608,lng:-122.335,field:'data',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.amazon.jobs/en/teams/university-tech',source:'Amazon Jobs'},
+  {title:'Microsoft — Software Engineer New Grad 2026 (H1B, Redmond/NYC)',school:'Microsoft',country:'USA',city:'Redmond',lat:47.674,lng:-122.1215,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.microsoft.com/students/us/en/universitygrad',source:'Microsoft Careers'},
+  {title:'Microsoft — AI/ML Engineer New Grad 2026 (H1B)',school:'Microsoft',country:'USA',city:'Redmond',lat:47.6745,lng:-122.122,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.microsoft.com/students/us/en/universitygrad',source:'Microsoft Careers'},
+  {title:'Apple — Software Engineer New Grad 2026 (H1B, Cupertino)',school:'Apple',country:'USA',city:'Cupertino',lat:37.3318,lng:-122.0312,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.apple.com/en-us/search?team=internships-and-graduate-programs-STDNT-PGRM',source:'Apple Jobs'},
+  {title:'Stripe — Software Engineer New Grad 2026 (Visa Sponsorship + Relocation)',school:'Stripe',country:'USA',city:'San Francisco',lat:37.773,lng:-122.416,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://stripe.com/jobs/search?q=new+grad',source:'Stripe Jobs'},
+  {title:'Atlassian — Software Engineer Graduate (Australia / US, Visa Sponsorship)',school:'Atlassian',country:'Australia',city:'Sydney',lat:-33.8688,lng:151.2093,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.atlassian.com/company/careers',source:'Atlassian Careers'},
+  {title:'Shopify — Software Engineer New Grad (Remote-First, Canada, Visa Support)',school:'Shopify',country:'Canada',city:'Ottawa',lat:45.4215,lng:-75.6972,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.shopify.com/careers',source:'Shopify Careers'},
+  {title:'SAP — Software Developer New Grad (EU Blue Card, Germany)',school:'SAP',country:'Germany',city:'Walldorf',lat:49.2936,lng:8.6442,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.sap.com',source:'SAP Careers'},
+  {title:'Siemens — Mechanical / Electrical Engineer New Grad (EU Blue Card, Germany)',school:'Siemens',country:'Germany',city:'Munich',lat:48.1351,lng:11.582,field:'mechanical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://jobs.siemens.com',source:'Siemens Careers'},
+  {title:'ASML — Optical / Mechatronics Engineer New Grad (Highly Skilled Migrant Visa)',school:'ASML',country:'Netherlands',city:'Eindhoven',lat:51.4416,lng:5.4697,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.asml.com/en/careers',source:'ASML Careers'},
+  {title:'Equinor — Petroleum / Reservoir Engineer New Grad (Norway Work Permit)',school:'Equinor',country:'Norway',city:'Stavanger',lat:58.97,lng:5.7331,field:'energy',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.equinor.com/careers/university-students',source:'Equinor Careers'},
+  {title:'ADNOC — Petroleum Engineer New Grad (Tax-Free, UAE Residence Visa)',school:'ADNOC',country:'UAE',city:'Abu Dhabi',lat:24.4539,lng:54.3773,field:'energy',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.adnoc.ae',source:'ADNOC Careers'},
+  {title:'Revolut — Software Engineer New Grad (Europe, Visa Support, Digital Process)',school:'Revolut',country:'UK',city:'London',lat:51.5072,lng:-0.1276,field:'software',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.revolut.com/careers',source:'Revolut Careers'},
+  {title:'Qualcomm — Hardware / Software Engineer New Grad 2026 (H1B)',school:'Qualcomm',country:'USA',city:'San Diego',lat:32.7157,lng:-117.1611,field:'electrical engineering',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://careers.qualcomm.com',source:'GitHub New-Grad-2026'},
+  {title:'IBM — Data / AI Engineer New Grad 2026 (H1B, Multiple US Locations)',school:'IBM',country:'USA',city:'Armonk',lat:41.1087,lng:-73.7197,field:'ai/ml',type:'job',funding:'funded',visa:'visa friendly',category:'job',link:'https://www.ibm.com/employment/entry_level',source:'IBM Careers'},
+];
+
+function spreadOverlappingPoints(data) {
+  const groups = new Map();
+  data.forEach(item => {
+    const key = `${item.lat.toFixed(2)}|${item.lng.toFixed(2)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  });
+  const adjusted = [];
+  groups.forEach(items => {
+    if (items.length === 1) {
+      adjusted.push({...items[0], plotLat: items[0].lat, plotLng: items[0].lng});
+      return;
+    }
+    // Sunflower spiral spread — evenly distributes any count
+    const baseR = 0.18 + items.length * 0.05;
+    items.forEach((item, i) => {
+      if (i === 0) {
+        adjusted.push({...item, plotLat: item.lat, plotLng: item.lng});
+        return;
+      }
+      const angle  = i * 2.399963; // golden angle in radians
+      const radius = baseR * Math.sqrt(i / items.length);
+      adjusted.push({
+        ...item,
+        plotLat: item.lat + radius * Math.cos(angle),
+        plotLng: item.lng + radius * Math.sin(angle) * 1.6
+      });
+    });
+  });
+  return adjusted;
+}
+
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const FIELD_COLORS = {
+  'software':'#e8ff4d','ai/ml':'#a78bfa','data':'#22d3ee','cfd':'#60a5fa',
+  'chemistry':'#f472b6','mechanical engineering':'#38bdf8',
+  'electrical engineering':'#60a5fa','civil engineering':'#34d399',
+  'aerospace engineering':'#c084fc','materials science':'#f59e0b',
+  'robotics':'#4dffd4','energy':'#f97316','climate/env':'#4ade80',
+  'biotech':'#fb7185','semiconductors':'#38bdf8','physics':'#818cf8'
+};
+
+const FIELDS   = ['all',...Object.keys(FIELD_COLORS)];
+const TYPES    = ['all','phd','masters','job','postdoc'];
+const FUNDING  = ['all','funded','scholarship','ra/ta','partial funding','limited funding','self-funded'];
+const VISA     = ['all','visa friendly','unknown'];
+const CATEGORY = ['all','program','lab','conference','job'];
+
+let aField='all', aType='all', aFunding='all', aVisa='all', aCategory='all', searchQ='';
+let markers=[], heatLayer;
+
+// ── MAP INIT ─────────────────────────────────────────────────────────────────
+const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([22,10],2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+const _ds=document.createElement('style');
+_ds.textContent='.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(0.75) saturate(0.4) contrast(0.9);}';
+document.head.appendChild(_ds);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function mkPills(arr, active, fn) {
+  return arr.map(v=>`<div class="pill ${active===v?'active':''}" onclick="${fn}('${v}')">${v}</div>`).join('');
+}
+
+function getFiltered() {
+  return OPP_DATA.filter(d=>{
+    const q=searchQ.toLowerCase();
+    const hay=[d.title,d.school,d.country,d.city,d.field,d.type,d.funding,d.category,d.visa].join(' ').toLowerCase();
+    return (aField==='all'||d.field===aField)
+      &&(aType==='all'||d.type===aType)
+      &&(aFunding==='all'||d.funding===aFunding)
+      &&(aVisa==='all'||d.visa===aVisa)
+      &&(aCategory==='all'||d.category===aCategory)
+      &&(!q||hay.includes(q));
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderFilters() {
+  document.getElementById('field-pills').innerHTML   = mkPills(FIELDS,   aField,   'setField');
+  document.getElementById('type-pills').innerHTML    = mkPills(TYPES,    aType,    'setType');
+  document.getElementById('funding-pills').innerHTML = mkPills(FUNDING,  aFunding, 'setFunding');
+  document.getElementById('visa-pills').innerHTML    = mkPills(VISA,     aVisa,    'setVisa');
+  document.getElementById('cat-pills').innerHTML     = mkPills(CATEGORY, aCategory,'setCategory');
+}
+
+function renderMap() {
+  markers.forEach(m=>map.removeLayer(m));
+  markers=[];
+  if(heatLayer) map.removeLayer(heatLayer);
+  const data=getFiltered();
+  const plotted=spreadOverlappingPoints(data);
+  const heat=data.map(d=>[d.lat,d.lng,d.type==='masters'?0.55:0.8]);
+  heatLayer=L.heatLayer(heat,{radius:42,blur:30,maxZoom:8,gradient:{'0.2':'#3b82f6','0.5':'#f97316','0.8':'#e8ff4d','1.0':'#ffffff'}}).addTo(map);
+  plotted.forEach((d,i)=>{
+    const col=FIELD_COLORS[d.field]||'#e8ff4d';
+    const r=d.category==='conference'?5:d.type==='masters'?6:7;
+    const delay=(i%8)*0.3;
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="position:relative;width:${r*2}px;height:${r*2}px;">
+        <div style="position:absolute;inset:0;border-radius:50%;background:${col};animation:lm-blink 1.8s ease-in-out ${delay}s infinite;"></div>
+      </div>`,
+      iconSize:[r*2,r*2],iconAnchor:[r,r]
+    });
+    const mk=L.marker([d.plotLat,d.plotLng],{icon})
+      .bindPopup(`<div style="font-family:'DM Mono',monospace;font-size:0.78rem;min-width:245px;line-height:1.5">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;margin-bottom:6px">${d.title}</div>
+        <div style="color:#4dffd4;margin-bottom:4px">🏛 ${d.school}</div>
+        <div style="color:#5a5f7a;margin-bottom:4px">📍 ${d.city === 'TBD' ? 'Location TBD' : d.city + ', ' + d.country}</div>
+        <div style="color:#5a5f7a;margin-bottom:4px">${d.category} · ${d.field} · ${d.type} · ${d.funding}</div>
+        ${d.eventDate ? `<div style="color:#e8ff4d;margin-bottom:8px">📅 ${d.eventDate}${d.city === 'TBD' ? ' (est.)' : ''}</div>` : '<div style="margin-bottom:8px"></div>'}
+        <a href="${d.link}" target="_blank" style="background:#e8ff4d;color:#07080f;padding:5px 12px;border-radius:4px;text-decoration:none;font-weight:700;font-size:0.72rem">View →</a>
+      </div>`,{className:'opmap-popup'}).addTo(map);
+    markers.push(mk);
+  });
+  document.getElementById('count-num').textContent=data.length;
+  document.getElementById('country-num').textContent=new Set(data.map(d=>d.country)).size;
+  document.getElementById('new-num').textContent=Math.min(16,Math.max(3,Math.round(data.length*0.22)));
+}
+
+function renderList() {
+  const data=getFiltered().slice(0,50);
+  document.getElementById('opp-list').innerHTML=data.map(d=>`
+    <div class="job-item" onclick="focusOpp(${d.lat},${d.lng})">
+      <div class="job-title">${d.title}</div>
+      <div class="job-co">${d.school}</div>
+      <div class="job-meta">
+        <div class="job-loc">📍 ${d.city}, ${d.country}</div>
+        <div class="job-tags">
+          <div class="tag-field">${d.field}</div>
+          <div class="tag-type">${d.category}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterList(){searchQ=document.getElementById('search').value;renderMap();renderList();}
+function focusOpp(lat,lng){map.flyTo([lat,lng],5,{duration:1.2});}
+function setField(v){aField=v;refresh();}
+function setType(v){aType=v;refresh();}
+function setFunding(v){aFunding=v;refresh();}
+function setVisa(v){aVisa=v;refresh();}
+function setCategory(v){aCategory=v;refresh();}
+function refresh(){renderFilters();renderMap();renderList();}
+
+const popupStyle = document.createElement('style');
+popupStyle.textContent = ".opmap-popup .leaflet-popup-content-wrapper { background:#0e1018; border:1px solid #1e2130; border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,0.6); } .opmap-popup .leaflet-popup-tip { background:#0e1018; } .leaflet-popup-close-button { color:#5a5f7a !important; }";
+document.head.appendChild(popupStyle);
+
+// ── AUTH / ALERTS MODALS ──────────────────────────────────────────────────────
+function openAuthModal(mode){
+  document.getElementById('auth-modal-overlay').classList.add('open');
+  document.getElementById('auth-success-state').style.display='none';
+  document.getElementById('auth-signin-state').style.display=mode==='signin'?'block':'none';
+  document.getElementById('auth-signup-state').style.display=mode==='signup'?'block':'none';
+}
+function closeAuthModal(){document.getElementById('auth-modal-overlay').classList.remove('open');}
+function closeAuthModalOutside(e){if(e.target.id==='auth-modal-overlay')closeAuthModal();}
+function submitSignIn(){
+  const e=document.getElementById('signin-email').value;
+  const p=document.getElementById('signin-password').value;
+  if(!e||!e.includes('@')||!p)return;
+  document.getElementById('auth-signin-state').style.display='none';
+  document.getElementById('auth-success-state').style.display='block';
+}
+function submitSignUp(){
+  const n=document.getElementById('signup-name').value;
+  const e=document.getElementById('signup-email').value;
+  const p=document.getElementById('signup-password').value;
+  if(!n||!e||!e.includes('@')||!p)return;
+  document.getElementById('auth-signup-state').style.display='none';
+  document.getElementById('auth-success-state').style.display='block';
+}
+function openAlertsModal(){document.getElementById('alerts-modal-overlay').classList.add('open');}
+function closeAlertsModal(){document.getElementById('alerts-modal-overlay').classList.remove('open');}
+function closeAlertsModalOutside(e){if(e.target.id==='alerts-modal-overlay')closeAlertsModal();}
+function submitEmail(){
+  const email=document.getElementById('email-input').value;
+  const input=document.getElementById('email-input');
+  if(!email||!email.includes('@')){input.style.borderColor='var(--danger)';return;}
+  document.getElementById('alerts-form-state').style.display='none';
+  document.getElementById('alerts-success-state').style.display='block';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+fetch("opmap_edu_opportunities.json")
+  .then(r=>{if(!r.ok)throw new Error();return r.json();})
+  .then(json=>{
+    OPP_DATA.length=0;
+    json.data.forEach(d=>OPP_DATA.push(d));
+    renderFilters();renderMap();renderList();
+    console.log("LocMappa: "+OPP_DATA.length+" entries loaded");
+  })
+  .catch(()=>{renderFilters();renderMap();renderList();});
+
+</script>
+</body>
+</html>
